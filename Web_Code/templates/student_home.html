@@ -1,0 +1,237 @@
+{% extends "navigation.html" %}
+
+{% block title %}Your Courses{% endblock %}
+
+{% block content %}
+    <style>
+        .background {
+            background-color: #f8f9fa;
+        }
+
+        .navbar-custom {
+            background-color: #343a40;
+        }
+
+        .navbar-custom .navbar-brand,
+        .navbar-custom .navbar-text,
+        .navbar-custom .nav-link {
+            color: #ffffff;
+        }
+
+        .courses-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .course-card {
+            margin-bottom: 20px;
+            flex: 1 0 21%;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-img-top {
+            width: 100%;
+            object-fit: cover;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        h2 {
+            padding: 10px 20px;
+            background-color: rgba(52, 58, 64, 0.8);
+            color: white;
+            display: block;
+            border-radius: 10px;
+            margin: 0 auto;
+            text-align: center;
+            width: fit-content;
+        }
+
+        .card-title {
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .btn-custom {
+            background-color: #343a40; /* 导航栏的暗灰色 */
+            color: #ffffff; /* 白色文本 */
+            border: none;
+            border-radius: 4px; /* 轻微的圆角 */
+            transition: background-color 0.3s, color 0.3s, box-shadow 0.3s; /* 平滑过渡效果 */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 轻微的阴影 */
+        }
+
+        .btn-custom:hover {
+            background-color: #151618; /* 悬停时的背景色，稍暗 */
+            color: #ffffff; /* 保持文本颜色为白色以确保可读性 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* 悬停时增加阴影效果 */
+        }
+
+        .description {
+            overflow: hidden;
+            height: 50px; /* 限制高度 */
+            text-overflow: ellipsis;
+        }
+
+        .show-all-btn {
+        {#display: none; /* 默认不显示 */#} cursor: pointer;
+        {#color: blue;#}
+        }
+    </style>
+
+    <div class="container mt-5">
+        <div class="courses-container">
+            <div class="d-flex justify-content-between align-items-center mb-3"> <!-- Flex container for alignment -->
+                <h2 class="mb-0">Courses</h2> <!-- mb-0 removes bottom margin from the title -->
+                <!-- Modal Trigger Button -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                        data-bs-target="#selectCourseModal" id="addCourseBtn">
+                    Add Course
+                </button>
+
+            </div>
+            <div class="row">
+                {% for course in courses_info %}
+                    <div class="col-sm-6 col-md-4 col-lg-3 mb-3">
+                        <div class="card course-card">
+                            <img src="{{ course.image_url }}" class="card-img-top" alt="Course Image">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ course.name }}</h5>
+                                <hr>
+                                <p class="card-text">Teacher: {{ course.teacher_name }}</p>
+                                <div class="text-center"> <!-- 添加一个用于居中按钮的容器 -->
+                                    <a href="{{ url_for('course_detail', course_id=course.id) }}"
+                                       class="btn btn-custom">Go to course</a>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- 课程选择模态框 -->
+    <div class="modal fade" id="selectCourseModal" tabindex="-1" aria-labelledby="selectCourseModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="selectCourseModalLabel">Select Course</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Teacher</th>
+                            <th>Action</th>
+                        </tr>
+                        </thead>
+                        <tbody id="coursesList">
+                        <!-- 课程列表由JavaScript填充 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const addCourseBtn = document.getElementById('addCourseBtn');
+            addCourseBtn.addEventListener('click', function () {
+                // 这里可以执行当按钮被点击时需要进行的操作
+                console.log('Add Course button clicked');
+                // 这里可以添加向服务器请求课程数据的代码
+                fetchCourses();
+            });
+        });
+
+        function fetchCourses() {
+            fetch('/available_courses')
+                .then(response => response.json())
+                .then(data => {
+                    // 处理数据，例如填充到模态框的表格中
+                    console.log(data);
+                    populateCourses(data);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function populateCourses(courses) {
+            const coursesList = document.querySelector('#coursesList');
+            coursesList.innerHTML = ''; // 先清空现有列表
+            courses.forEach(course => {
+                coursesList.innerHTML += `
+            <tr>
+                <td><img src="${course.image_url}" alt="Course Image" style="width: 50px; height: auto;"></td>
+                <td>${course.name}</td>
+                <td>
+                    <div class="description" id="desc-${course.id}">
+                        ${course.description}
+                    </div>
+                    <button class="show-all-btn" onclick="toggleDescription('${course.id}')">Show All</button>
+                </td>
+                <td>${course.teacher_name}</td>
+                <td><button class="btn btn-success" onclick="registerCourse(${course.id})">Add</button></td>
+            </tr>
+        `;
+            });
+        }
+
+        function toggleDescription(courseId) {
+            const desc = document.getElementById(`desc-${courseId}`);
+            const btn = desc.nextElementSibling;
+            if (desc.style.height === 'auto') {
+                desc.style.height = '50px';
+                btn.textContent = 'Show All';
+            } else {
+                desc.style.height = 'auto';
+                btn.textContent = 'Show Less';
+            }
+        }
+
+        function registerCourse(courseId) {
+            fetch(`/register_course/${courseId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // 可能还需要其他的headers，比如用于CSRF防护的token
+                }
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        throw new Error('Something went wrong with the request.');
+                    }
+                })
+                .then(data => {
+                    alert(data.message);  // 显示来自服务器的反馈
+                    // 你可能还希望在这里更新页面上的一些元素，以反映新的状态
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to add course: ' + error.message);
+                });
+        }
+
+
+    </script>
+
+{% endblock %}

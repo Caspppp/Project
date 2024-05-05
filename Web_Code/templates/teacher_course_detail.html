@@ -1,0 +1,260 @@
+{% extends "navigation.html" %}
+
+{% block title %}Course Details{% endblock %}
+
+{% block content %}
+
+    <style>
+        .background {
+            background-color: #f8f9fa; /* 浅灰色背景 */
+        }
+
+        .navbar-custom {
+            background-color: #343a40; /* 暗灰色背景 */
+        }
+
+        .navbar-custom .navbar-brand,
+        .navbar-custom .navbar-text,
+        .navbar-custom .nav-link {
+            color: #ffffff; /* 白色文本 */
+        }
+
+        .card {
+            border-radius: 15px; /* 圆角设计 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+            margin-bottom: 20px; /* 卡片间距 */
+            padding: 20px; /* 内边距 */
+            background-color: #ffffff; /* 白色背景 */
+        }
+
+        .card-img-top {
+            width: 100%;
+            max-width: 300px; /* 控制图片最大宽度 */
+            height: auto; /* 自动高度保持比例 */
+            object-fit: contain; /* 图片内容适应容器大小 */
+            margin-top: 50px; /* 顶部外边距 */
+            margin-left: 50px; /* 左侧外边距 */
+            margin-bottom: 50px; /* 底部外边距 */
+            border-radius: 4px; /* 所有角设置圆角 */
+        }
+
+
+        .card-title {
+            font-weight: bold; /* 增加字体粗细 */
+            margin-bottom: 30px; /* 增加较大的下边距以与下面的元素分隔 */
+        }
+
+        .course_title {
+            padding-top: 30px; /* 调整上内边距使标题与图片顶部对齐 */
+        }
+
+        {#.chart-container {#}
+        {#    width: 300px;#}
+        {#    height: 300px;#}
+        {#    padding: 10px;#}
+        {#    border: 1px solid #ccc;#}
+        {
+        #}#}
+
+
+    </style>
+
+    <div class="container mt-5">
+        <div class="card mb-3">
+            <div class="row g-0">
+                <div class="col-md-4">
+                    <img src="{{ course.image_url }}" class="img-fluid rounded-start card-img-top" alt="Course Image">
+                </div>
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h2 class="card-title course_title">{{ course.name }}</h2>
+                        <p class="card-text">{{ course.description }}</p>
+                        <div class="row">
+                            <div class="col">
+                                <p class="card-text"><small class="text-muted">Enrolled
+                                    Students: {{ enrolled_students_count }}</small></p>
+                            </div>
+                            <div class="col">
+                                <p class="card-text"><small class="text-muted">Reviewed
+                                    Students: {{ reviewed_students_count }}</small></p>
+                            </div>
+                        </div>
+                        {#                        <a href="#" class="btn btn-primary">Edit Course</a>#}
+                        {#                        <a href="#" class="btn btn-danger">Delete Course</a>#}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <strong>Student Reviews</strong>
+            </div>
+            <div class="card-body" style="position: relative; max-height: 300px; overflow-y: auto;">
+                <ul class="list-group list-group-flush">
+                    {% for comment, student_name in reviews %}
+                        <li class="list-group-item">{{ student_name }} - {{ comment.comment }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="card-footer" style="text-align: right;">
+                {#                <button type="button" class="btn btn-primary" onclick="analyzeSentiments({{ course.id }})">Analyze All#}
+                {#                    Sentiments#}
+                {#                </button>#}
+                <button type="button" class="btn btn-primary" onclick="analyzeData({{ course.id }})">Analyze All
+                    Sentiments
+                </button>
+
+            </div>
+        </div>
+
+
+        <div class="card">
+            <div class="card-title">
+                <strong>Sentiment Analysis Results</strong>
+            </div>
+            <!-- Flexbox容器 -->
+            <div style="display: flex; justify-content: space-around; align-items: center;">
+                <!-- 饼状图 -->
+                <div class="chart-container" style="flex: 1; padding: 10px;">
+                    <canvas id="sentimentChart"></canvas>
+                </div>
+                <!-- 词云图 -->
+                <div class="word-cloud-container" style="flex: 1; padding: 10px; display: none;"
+                     id="wordCloudContainer">
+                    <h3 style="text-align: center;">Word Cloud Analysis</h3>
+                    <canvas id="wordCloud" width="620" height="300"></canvas>
+                </div>
+
+            </div>
+
+
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            {#        <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.1.0"></script>#}
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.1.0/wordcloud2.min.js"></script>
+
+            <script>
+
+                function analyzeData(courseId) {
+                    analyzeSentiments(courseId);
+                    fetchWordCloudData(courseId);
+                }
+
+
+                function analyzeSentiments(courseId) {
+                    // 显示词云容器
+                    document.getElementById('wordCloudContainer').style.display = 'block';
+
+                    const ctx = document.getElementById('sentimentChart').getContext('2d');
+
+                    // 检查图表实例是否存在并且是一个有效的图表实例
+                    if (window.sentimentChart instanceof Chart) {
+                        window.sentimentChart.destroy();
+                    }
+
+                    fetch(`/analyze_sentiments/${courseId}`, {
+                        method: 'GET'
+                    }).then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        } else {
+                            throw new Error('Failed to fetch sentiment data');
+                        }
+                    }).then(data => {
+                        console.log(data)
+                        window.sentimentChart = new Chart(ctx, {
+                            type: 'pie',
+                            data: {
+                                labels: ['Negative', 'Neutral', 'Positive'],
+                                datasets: [{
+                                    data: [data.Negative, data.Neutral, data.Positive],
+                                    backgroundColor: ['#e74c3c', '#f1c40f', '#2ecc71'],
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false,
+                                    },
+                                    title: {  // 添加图表标题
+                                        display: true,
+                                        text: 'Sentiment Distribution Chart',
+                                        font: {
+                                            size: 18
+                                        },
+                                        color: '#34495e'
+                                    }
+                                }
+                            }
+                        });
+                    }).catch(error => {
+                        console.error('Error:', error);
+                        alert('Error fetching sentiment data: ' + error.message);
+                    });
+                }
+
+                function fetchWordCloudData(courseId) {
+                    fetch(`/get_wordcloud_data/${courseId}`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                throw new Error('Failed to fetch word cloud data');
+                            }
+                        })
+                        .then(data => {
+                            generateWordCloud(data);
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error fetching word cloud data: ' + error.message);
+                        });
+                }
+
+
+                function generateWordCloud(data) {
+                    // 对数据按权重排序并克隆以避免直接修改原数据
+                    const sortedData = [...data].sort((a, b) => b[1] - a[1]);
+
+                    // 获取权重最高的5个词
+                    const topWords = new Set(sortedData.slice(0, 20).map(item => item[0]));
+
+                    // 映射数据并设置旋转策略
+                    const wordList = data.map(item => {
+                        return {
+                            text: item[0],
+                            weight: item[1],
+                            rotateRatio: topWords.has(item[0]) ? 0 : 0.5 // 权重前5的词不旋转
+                        };
+                    });
+
+                    WordCloud(document.getElementById('wordCloud'), {
+                        list: wordList.map(item => [item.text, item.weight]),
+                        gridSize: 1,
+                        weightFactor: 20,
+                        fontFamily: 'Times, serif',
+                        color: 'random-dark',
+                        rotateRatio: 0,
+                        rotationSteps: 2,
+                        backgroundColor: '#fff',
+                        rotateFunction: (word) => {
+                            // 使用特定词的rotateRatio
+                            return Math.random() < word.rotateRatio ? 90 : 0;
+                        }
+                    });
+                }
+
+
+            </script>
+
+            <!-- Add more sections as needed -->
+        </div>
+    </div>
+{% endblock %}
+

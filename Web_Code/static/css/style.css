@@ -1,0 +1,28 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    align-items: center; /* Aligns vertically center */
+    justify-content: center; /* Aligns horizontally center */
+    background: #f7f7f7; /* Optional: background color of the entire page */
+}
+
+.container {
+    background: white; /* Background color of the login box */
+    padding: 20px; /* Padding around the form */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1); /* Adds shadow around the box */
+    width: 400px; /* Set the width of the login box */
+    border-radius: 5px; /* Optional: rounded corners */
+}
+
+/* Optional: Responsive adjustments */
+@media (max-width: 450px) {
+    .container {
+        width: 95%;
+        padding: 10px;
+    }
+}
+
+.modal-dialog {
+    margin-top: 400px; /* 增加顶部边距 */
+}
